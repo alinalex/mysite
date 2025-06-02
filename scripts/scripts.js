@@ -12,7 +12,6 @@ import {
   loadSections,
   loadCSS,
 } from './aem.js';
-import { loadFixes } from '../plugins/aso/src/index.js';
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -124,7 +123,6 @@ function loadDelayed() {
 async function loadPage() {
   await loadEager(document);
   await loadLazy(document);
-  loadFixes();
   loadDelayed();
 }
 
