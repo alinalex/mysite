@@ -1,6 +1,13 @@
 import dotenv from 'dotenv';
-// Load environment variables from parent directory
-dotenv.config({ path: '../.env' });
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Get the directory of the current module
+const currentFilename = fileURLToPath(import.meta.url);
+const currentDir = path.dirname(currentFilename);
+
+// Load environment variables from parent directory (mysite/.env)
+dotenv.config({ path: path.join(currentDir, '..', '.env') });
 
 // Azure OpenAI Configuration
 const AZURE_OPENAI_CONFIG = {

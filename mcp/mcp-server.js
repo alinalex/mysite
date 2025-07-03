@@ -13,12 +13,10 @@ import chatWithGPT4 from './open-ai.js';
 
 // eslint-disable-next-line camelcase
 const a11yMatchPrompt = 'You are a Web Engineering Specialist. You are given Javascript code and can determine the HTML code that will be rendered and then match it to the HTML code that is provided.';
-// eslint-disable-next-line no-unused-vars
 const blockPath = '/Users/alinrauta/WebstormProjects/mysite/blocks';
-const customBlockPath = '/Users/alinrauta/WebstormProjects/mysite/custom-blocks';
 
 // Helper function to read all code files from a directory
-async function readDirectoryCode(dirPath = customBlockPath, extensions = ['.js', '.css']) {
+async function readDirectoryCode(dirPath = blockPath, extensions = ['.js', '.css']) {
   try {
     const files = [];
 
@@ -108,7 +106,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'match_html_to_block',
-      description: 'Match HTML to a block by using an example of html code',
+      description: 'Find the block that generates the html code that is provided',
       inputSchema: {
         type: 'object',
         properties: {
@@ -199,7 +197,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             content: [
               {
                 type: 'text',
-                text: `Error reading directory ${customBlockPath}: ${dirError.message}`,
+                text: `Error reading directory ${blockPath}: ${dirError.message}`,
               },
             ],
             isError: true,
@@ -275,7 +273,7 @@ Please analyze this accessibility issue and provide the specific code changes ne
 
         try {
           const extensions = fileExtensions || ['.js', '.css'];
-          const files = await readDirectoryCode(`${customBlockPath}/${blockName}`, extensions);
+          const files = await readDirectoryCode(`${blockPath}/${blockName}`, extensions);
           const directoryContext = formatDirectoryContext(files);
 
           // Add directory context to the message
@@ -289,7 +287,7 @@ Please analyze this accessibility issue and provide the specific code changes ne
             content: [
               {
                 type: 'text',
-                text: `Error reading directory ${customBlockPath}/${blockName}: ${dirError.message}`,
+                text: `Error reading directory ${blockPath}/${blockName}: ${dirError.message}`,
               },
             ],
             isError: true,
