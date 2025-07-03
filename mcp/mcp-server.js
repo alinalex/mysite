@@ -10,7 +10,7 @@ import {
 import fs from 'fs';
 import path from 'path';
 import chatWithGPT4 from './open-ai.js';
-
+import runAxeAudit from './axe-runner.js';
 // eslint-disable-next-line camelcase
 const a11yMatchPrompt = 'You are a Web Engineering Specialist. You are given Javascript code and can determine the HTML code that will be rendered and then match it to the HTML code that is provided.';
 const blockPath = '/Users/alinrauta/WebstormProjects/mysite/blocks';
@@ -165,6 +165,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['blockName', 'suggestion'],
       },
     },
+    {
+      name: 'validate_fix',
+      description: 'Validate the fix in a block based based on branch url, issue name and faulty html code',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          branchUrl: { type: 'string', description: 'The branch url' },
+          issueName: { type: 'string', description: 'The issue name' },
+          faultyHtmlCode: { type: 'string', description: 'The faulty html code' },
+        },
+        required: ['branchUrl', 'issueName', 'faultyHtmlCode'],
+      },
+    },
   ],
 }));
 
@@ -241,33 +254,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Default system prompt for accessibility fixes
         const defaultSystemPrompt = `You are a Web Accessibility Expert and Frontend Developer. Your task is to analyze accessibility problems in HTML and provide specific code changes to fix them.
 
-Given:
-1. Block code content with accessibility problems (JavaScript and CSS)
-2. A suggestion for fixing the accessibility problem
+        Given:
+        1. Block code content with accessibility problems (JavaScript and CSS)
+        2. A suggestion for fixing the accessibility problem
 
-You should:
-1. Analyze the block code and identify the specific accessibility issue
-2. Understand how the block code generates or styles the HTML
-3. Provide exact code changes needed in the JavaScript and CSS files to implement the accessibility fix
-4. Focus on practical, implementable solutions. Do not make up any information. Be sure to also check for class names and other attributes that may be used in the code.
-5. Ensure the fix follows WCAG guidelines and best practices
+        You should:
+        1. Analyze the block code and identify the specific accessibility issue
+        2. Understand how the block code generates or styles the HTML
+        3. Provide exact code changes needed in the JavaScript and CSS files to implement the accessibility fix
+        4. Focus on practical, implementable solutions. Do not make up any information. Be sure to also check for class names and other attributes that may be used in the code.
+        5. Ensure the fix follows WCAG guidelines and best practices
 
-Format your response with:
-- Clear explanation of the accessibility issue
-- Specific changes for JavaScript files (if needed)
-- Specific changes for CSS files (if needed)
-- Implementation notes or considerations`;
+        Format your response with:
+        - Clear explanation of the accessibility issue
+        - Specific changes for JavaScript files (if needed)
+        - Specific changes for CSS files (if needed)
+        - Implementation notes or considerations`;
 
         let enhancedMessage = `
-Block with accessibility problem:
-\`\`\`
-${blockName}
-\`\`\`
+        Block with accessibility problem:
+        \`\`\`
+        ${blockName}
+        \`\`\`
 
-Accessibility fix suggestion:
-${suggestion}
+        Accessibility fix suggestion:
+        ${suggestion}
 
-Please analyze this accessibility issue and provide the specific code changes needed and then do these changes in the JavaScript and CSS files to implement the suggested fix.`;
+        Please analyze this accessibility issue and provide the specific code changes needed and then do these changes in the JavaScript and CSS files to implement the suggested fix.`;
 
         let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
 
@@ -315,6 +328,82 @@ Please analyze this accessibility issue and provide the specific code changes ne
           ],
           isError: true,
         };
+      }
+      case 'validate_fix': {
+        const {
+          branchUrl,
+          issueName,
+          faultyHtmlCode,
+        } = args;
+
+        try {
+          // Run axe-core audit on the branch URL
+          const violations = await runAxeAudit(branchUrl) || [];
+          const matchingViolation = violations.find((violation) => violation.id === issueName);
+
+          if (matchingViolation) {
+            // Check if the htmlWithIssues is the same as the faultyHtmlCode
+            const htmlMatches = matchingViolation.nodes.some((node) => {
+              const nodeHtml = node.html || '';
+              return nodeHtml.trim().replaceAll('/', '') === faultyHtmlCode.trim();
+            });
+
+            if (htmlMatches) {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify({
+                      success: false,
+                      message: 'Fix validation failed: The accessibility issue still exists',
+                      issueName,
+                      violation: matchingViolation,
+                    }, null, 2),
+                  },
+                ],
+              };
+            }
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({
+                    success: true,
+                    message: 'Fix validation passed: The specific HTML code with the issue was not found',
+                    issueName,
+                  }, null, 2),
+                },
+              ],
+            };
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  message: 'Fix validation passed: The accessibility issue was not found',
+                  issueName,
+                  totalViolations: violations.length,
+                }, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: false,
+                  error: `Error validating fix: ${error.message}`,
+                }, null, 2),
+              },
+            ],
+            isError: true,
+          };
+        }
       }
 
       default:
