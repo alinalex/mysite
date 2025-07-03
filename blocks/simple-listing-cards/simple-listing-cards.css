@@ -1,4 +1,4 @@
-.listing-cards {
+ul.listing-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
@@ -7,7 +7,7 @@
   padding: 0;
 }
 
-.listing-card {
+ul > .listing-card {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -16,7 +16,7 @@
   box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
 }
 
-.listing-card:hover {
+ul > .listing-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
   border-color: #d1d5db;
@@ -39,12 +39,12 @@
 
 /* Responsive adjustments */
 @media (width <= 768px) {
-  .listing-cards {
+  ul.listing-cards {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
   
-  .listing-card {
+  ul > .listing-card {
     padding: 1rem;
   }
   
@@ -55,12 +55,12 @@
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
-  .listing-card {
+  ul > .listing-card {
     background: #1f2937;
     border-color: #374151;
   }
   
-  .listing-card:hover {
+  ul > .listing-card:hover {
     border-color: #4b5563;
   }
   
