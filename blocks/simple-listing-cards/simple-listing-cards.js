@@ -3,8 +3,8 @@ export default function decorate(block) {
   const originalChildren = [...block.children];
 
   // Clear and set up the structure
-  block.innerHTML = '<ul class="listing-cards"></ul>';
-  const ul = block.querySelector('ul');
+  block.innerHTML = '<div class="listing-cards"></div>';
+  const divContainer = block.querySelector('.listing-cards');
 
   originalChildren.forEach((row) => {
     const div = document.createElement('div');
@@ -26,7 +26,7 @@ export default function decorate(block) {
     });
 
     if (div.children.length > 0) {
-      ul.append(div);
+      divContainer.append(div);
     }
   });
 }
